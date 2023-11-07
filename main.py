@@ -1,0 +1,157 @@
+import os
+import time
+import discord
+from discord.ext import commands
+from random import randint
+import idk
+
+intents = discord.Intents.default()
+intents.typing = False
+intents.presences = False
+intents.message_content = True
+bot = commands.Bot(command_prefix='!', intents=intents)
+user_cash = {}
+set_cash_authorized = [595682667349934109, 697494341664636959]
+
+@bot.event
+async def on_ready():
+    print(f'Logged in as {bot.user.name}')
+
+@bot.command(brief='!count [n]', description='Counts from 1 to [n]')
+async def count(ctx, n: int):
+  for i in range (n):
+    await ctx.send(i+1)
+    time.sleep (0.5)
+
+@bot.command(brief='!countrange [x] [y]', description='Counts from [x] to [y]')
+async def countrange(ctx, ns: int, ne: int):
+  if ns > ne:
+    await ctx.send('Start must be less than or equal to end')
+  else:
+    for i in range (ne-ns+1):
+      await ctx.send(ns+i)
+      time.sleep (0.5)
+
+@bot.command(brief='!abc [end_letter]', description='Says the alphabet from a to [end_letter]')
+async def abc(ctx, a: str):
+  a = a.lower()
+  alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
+  i = 0
+  x = 0
+  letter = ""
+  for letters in (alphabet):
+    if a == letters:
+      x = x + 1
+  if x == 0:
+    await ctx.send(a + " is not a single letter in the alphabet")
+  else:
+    while letter != a:
+      letter = alphabet[i]
+      i = i + 1
+      await ctx.send(letter)
+      time.sleep (0.5)
+
+@bot.command(brief='!repeat [x] [n]', description='[x] is repeated [n] times')
+async def repeat (ctx, b: str, amount: int):
+  if "@" in b:
+    await ctx.send ("You cannot spam ping someone (or have the character: @, in your message.)")
+  else:
+    for i in range (amount):
+      await ctx.send (b)
+      time.sleep (0.5)
+
+@bot.command()
+async def set_cash(ctx, value):
+  user_id = str(ctx.author.id)
+  value = idk.abbreviate (value)
+  x = 0
+  for id in set_cash_authorized:
+    if int(user_id) == id:
+      user_cash[user_id] = value
+      user_cash[id] = value
+      await ctx.send("Information updated.")
+      x = x + 1
+  if x == 0:
+    await ctx.send ("You are not authorized to use this command.")
+
+@bot.command(brief='!cash', description='Tells user how much cash they have (rounded)')
+async def cash(ctx):
+  user_id = str(ctx.author.id)
+
+  if user_id in user_cash:
+    value = user_cash[user_id]
+  else:
+    value = 1000
+    user_cash[user_id] = value
+  await ctx.send(f"{ctx.author.mention}, your cash is {idk.compact (value)}.")
+
+@bot.command(brief='!cash_exact', description='Tells user exactly how much cash they have')
+async def cash_exact (ctx):
+  user_id = str(ctx.author.id)
+
+  if user_id in user_cash:
+    value = user_cash[user_id]
+  else:
+    value = 1000
+    user_cash[user_id] = value
+  await ctx.send(f"{ctx.author.mention}, your cash is {value}.")
+
+@bot.command(brief='!gamble [amount]', description='Gambles [amount] cash')
+async def gamble (ctx, amount):
+  user_id = str(ctx.author.id)
+
+  amount = idk.abbreviate (amount)
+  if user_id not in user_cash:
+    user_cash[user_id] = 1000
+  value = user_cash[user_id]
+  if int (value) < int (amount):
+    await ctx.send ("Insufficient cash")
+  else:
+    rng = randint (1, 20)
+    if rng == 1:
+      await ctx.send (f"{ctx.author.mention}, you gambled {idk.compact (amount)} cash and won {25 * int(idk.compact (amount))} cash.")
+      user_cash[user_id] = int (value) + int (amount) * 25
+    else:
+      await ctx.send (f"{ctx.author.mention}, you gambled {idk.compact (amount)} cash and lost {idk.compact (amount)} cash.")
+      user_cash[user_id] = int (value) - int (amount)
+
+@bot.command(brief='!lottery [num_tickets]', description='Buys [num_tickets] tickets for the lottery for 50 cash each.')
+async def lottery (ctx, tickets):
+  user_id = str(ctx.author.id)
+  tickets = idk.abbreviate (tickets)
+  cost = int (tickets) * 50
+  if (user_id not in user_cash):
+    user_cash[user_id] = 1000
+  if (int(user_cash[user_id]) < cost):
+    await ctx.send (f"{ctx.author.mention} You cannot afford {tickets} tickets.")
+  else:
+    user_cash[user_id] = int (user_cash[user_id]) - cost
+    win = False
+    for i in range (int(tickets)):
+      rng = randint (1, 100000)
+      if rng == 1:
+        win = True
+        break
+    if win:
+      user_cash[user_id] = int (user_cash[user_id]) + 10000000
+      await ctx.send (f"{ctx.author.mention} You won 10 million cash from the lottery!")
+    else:
+      await ctx.send (f"{ctx.author.mention} You did not win anything from the lottery.")
+
+@bot.command(brief='!work', description='User makes money by working')
+async def work (ctx):
+  user_id = str(ctx.author.id)
+  if user_id not in user_cash:
+    user_cash[user_id] = 1000
+  rng_Pay = int (randint(1, 10) * randint(1, 10) * randint (1, 10) * int (user_cash[user_id]) / 2000 + 200)
+  user_cash[user_id] = int (user_cash[user_id]) + rng_Pay
+  await ctx.send (f"{ctx.author.mention}, you worked and earned {idk.compact (rng_Pay)} cash.")
+
+@bot.command(brief='!check_cash [id] [username]', description='Says the amount of cash the user with the id [id] has.')
+async def check_cash (ctx, id, name):
+  if id not in user_cash:
+    user_cash[id] = 1000
+  value = user_cash[id]
+  await ctx.send (f"{name} has {idk.compact (value)} cash.")
+
+bot.run(os.environ['TOKEN'])
