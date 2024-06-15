@@ -228,7 +228,7 @@ async def check_cash (ctx, id, name):
 
 @bot.command(brief='!shop', description='Tells user the items they can buy from the shop.')
 async def shop (ctx):
-  await ctx.send (f"{ctx.author.mention}\n\nWelcome to the shop! Here are the items you can buy:\n1. Worker Potion - 10k cash\n2. Mega Worker Potion - 1m cash\n3. Giga Worker Potion - 100m cash\n4. Ultra Worker Potion - 10b cash\n5. Worker Emperor Potion - 1t cash\n\n\nEnter !buy [number] [amount] to buy item.")
+  await ctx.send (f"{ctx.author.mention}\n\nWelcome to the shop! Here are the items you can buy:\n1. Worker Potion - 10k cash\n2. Mega Worker Potion - 1m cash\n3. Giga Worker Potion - 100m cash\n4. Ultra Worker Potion - 10b cash\n5. Worker Emperor Potion - 1t cash\n6. Arabi Potion - 1sp cash\n\n\nEnter !buy [number] [amount] to buy item.")
 
 @bot.command(brief='!buy [item_num] [amount]', description='Buys [amount] of the item from the shop.')
 async def buy (ctx, item: int, number):
@@ -277,11 +277,18 @@ async def buy (ctx, item: int, number):
       await ctx.send (f"{ctx.author.mention}, you bought {idk.compact(amount)} worker emperor potion for {idk.compact (amount * 1000000000000)} cash.")
     else:
       await ctx.send (f"{ctx.author.mention}, you cannot afford {idk.compact(amount)} worker emperor potion.")
+  elif item == 6:
+    if int(user_cash[user_id]) >= 1000000000000000000000000 * amount:
+      user_cash[user_id] = int (user_cash[user_id]) - 1000000000000000000000000 * amount
+      user_multiplier[user_id] = int (user_multiplier[user_id]) + 1000000000000000000000000 * amount
+      await ctx.send (f"{ctx.author.mention}, you bought {idk.compact(amount)} arabi potion for {idk.compact (amount * 1000000000000000000000000)} cash.")
+    else:
+      await ctx.send (f"{ctx.author.mention}, you cannot afford {idk.compact(amount)} arabi potion.")
   else:
     await ctx.send (f"{ctx.author.mention}, that is an invalid choice.")
-  if int(user_multiplier[user_id]) >= 100000000000000000000:
+  if int(user_multiplier[user_id]) >= 1000000000000000000000000000000000:
     await ctx.send (f"{ctx.author.mention}, you have reached the maximum multiplier.")
-    user_multiplier[user_id] = 100000000000000000000
+    user_multiplier[user_id] = 1000000000000000000000000000000000
   cash_bytes = int(user_cash[user_id]).to_bytes(16, byteorder='big')
   multiplier_bytes = int(user_multiplier[user_id]).to_bytes(16, byteorder='big')
   update_user_data (user_id, cash_bytes, multiplier_bytes)
@@ -305,9 +312,35 @@ async def reset (ctx):
   user_id = str(ctx.author.id)
   user_cash[user_id] = 1000
   user_multiplier[user_id] = 1
-  await ctx.send("Information resetted.")
+  await ctx.send("Information reset.")
   cash_bytes = int(user_cash[user_id]).to_bytes(16, byteorder='big')
   multiplier_bytes = int(user_multiplier[user_id]).to_bytes(16, byteorder='big')
   update_user_data (user_id, cash_bytes, multiplier_bytes)
+
+@bot.command(brief='!leaderboard', description='Displays the top 10 users with the highest cash.')
+async def leaderboard(ctx):
+    conn = sqlite3.connect('user_data.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT user_id, cash FROM user_data')
+    user_data = cursor.fetchall()
+    conn.close()
+
+    leaderboard_data = []
+    for user_id, cash in user_data:
+        if isinstance(cash, bytes):
+            cash_value = int.from_bytes(cash, byteorder='big')
+        else:
+            cash_value = cash
+        leaderboard_data.append((user_id, cash_value))
+
+    leaderboard_data.sort(key=lambda x: x[1], reverse=True)
+
+    leaderboard_message = "## 🏆 **Leaderboard** 🏆 ##"
+    for idx, (user_id, cash_value) in enumerate(leaderboard_data[:10], start=1):
+        user = await bot.fetch_user(user_id)
+        leaderboard_message += f"{idx}. {user.name} - {idk.compact(cash_value)} cash\n"
+
+    await ctx.send(leaderboard_message)
 
 bot.run(os.environ['TOKEN'])

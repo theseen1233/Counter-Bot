@@ -26,6 +26,18 @@ def abbreviate (money):
   if "oct" in (money.lower()):
     money = money.replace ("oct", "")
     return int(float(money) * 1000000000000000000000000000)
+  if "n" in (money.lower()):
+    money = money.replace ("n", "")
+    return int(float(money) * 1000000000000000000000000000000)
+  if ("d" in (money.lower()) and "u" not in money.lower() and "dd" not in money.lower()):
+    money = money.replace ("d", "")
+    return int(float(money) * 1000000000000000000000000000000000)
+  if "ud" in (money.lower()):
+    money = money.replace ("ud", "")
+    return int(float(money) * 1000000000000000000000000000000000000)
+  if "dd" in (money.lower()):
+    money = money.replace ("dd", "")
+    return int(float(money) * 1000000000000000000000000000000000000000)
   return money
 
 def compact (money):
@@ -47,4 +59,13 @@ def compact (money):
     return str(round(int(money) / 1000000000000000000000, 2)) + "s"
   if int(money) < 1000000000000000000000000000:
     return str(round(int(money) / 1000000000000000000000000, 2)) + "sp"
-  return str(round(int(money) / 1000000000000000000000000000, 2)) + "oct"
+  if int(money) < 1000000000000000000000000000000:
+    return str(round(int(money) / 1000000000000000000000000000, 2)) + "oct"
+  if int(money) < 1000000000000000000000000000000000:
+    return str(round(int(money) / 1000000000000000000000000000000, 2)) + "n"
+  if int(money) < 1000000000000000000000000000000000000:
+    return str(round(int(money) / 1000000000000000000000000000000000, 2)) + "d"
+  if int(money) < 1000000000000000000000000000000000000000:
+    return str(round(int(money) / 1000000000000000000000000000000000000, 2)) + "ud"
+  if int(money) < 10000000000000000000000000000000000000000:
+    return str(round(int(money) / 1000000000000000000000000000000000000000, 2)) + "dd"
