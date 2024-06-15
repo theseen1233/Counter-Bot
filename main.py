@@ -1,9 +1,9 @@
-import os
-import time
 import discord
 from discord.ext import commands
-from random import randint
 import sqlite3
+import os
+import time
+from random import randint
 import idk
 
 intents = discord.Intents.default()
@@ -219,12 +219,13 @@ async def work (ctx):
   multiplier_bytes = int(user_multiplier[user_id]).to_bytes(16, byteorder='big')
   update_user_data (user_id, cash_bytes, multiplier_bytes)
 
-@bot.command(brief='!check_cash [id] [username]', description='Says the amount of cash the user with the id [id] has.')
-async def check_cash (ctx, id, name):
+@bot.command(brief='!check_cash [id]', description='Says the amount of cash the user with the id [id] has.')
+async def check_cash (ctx, id):
   if id not in user_cash:
     user_cash[id] = 1000
   value = user_cash[id]
-  await ctx.send (f"{name} has {idk.compact (value)} cash.")
+  blud = await bot.fetch_user(id)
+  await ctx.send (f"{blud.name} has {idk.compact (value)} cash.")
 
 @bot.command(brief='!shop', description='Tells user the items they can buy from the shop.')
 async def shop (ctx):
@@ -293,6 +294,10 @@ async def buy (ctx, item: int, number):
   multiplier_bytes = int(user_multiplier[user_id]).to_bytes(16, byteorder='big')
   update_user_data (user_id, cash_bytes, multiplier_bytes)
 
+@bot.command(brief='!mult', description='Shortcut to check multiplier')
+async def mult(ctx):
+  await multiplier (ctx)
+
 @bot.command(brief='!multiplier', description='Tells user how much their work multiplier is (rounded).')
 async def multiplier (ctx):
   user_id = str (ctx.author.id)
@@ -317,6 +322,10 @@ async def reset (ctx):
   multiplier_bytes = int(user_multiplier[user_id]).to_bytes(16, byteorder='big')
   update_user_data (user_id, cash_bytes, multiplier_bytes)
 
+@bot.command(brief='!lb', description='Shortcut to check cash leaderboard')
+async def lb(ctx):
+  await leaderboard (ctx)
+
 @bot.command(brief='!leaderboard', description='Displays the top 10 users with the highest cash.')
 async def leaderboard(ctx):
     conn = sqlite3.connect('user_data.db')
@@ -336,10 +345,40 @@ async def leaderboard(ctx):
 
     leaderboard_data.sort(key=lambda x: x[1], reverse=True)
 
-    leaderboard_message = "## 🏆 **Leaderboard** 🏆 ##"
+    leaderboard_message = "## 🏆 ** Cash Leaderboard** 🏆 ##\n"
     for idx, (user_id, cash_value) in enumerate(leaderboard_data[:10], start=1):
         user = await bot.fetch_user(user_id)
         leaderboard_message += f"{idx}. {user.name} - {idk.compact(cash_value)} cash\n"
+
+    await ctx.send(leaderboard_message)
+
+@bot.command(brief='!multlb', description='Shortcut to check multiplier leaderboard')
+async def multlb(ctx):
+  await mult_leaderboard (ctx)
+
+@bot.command(brief='!mult_leaderboard', description='Displays the top 10 users with the highest multiplier.')
+async def mult_leaderboard(ctx):
+    conn = sqlite3.connect('user_data.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT user_id, multiplier FROM user_data')
+    user_data = cursor.fetchall()
+    conn.close()
+
+    leaderboard_data = []
+    for user_id, multiplier in user_data:
+        if isinstance(multiplier, bytes):
+            mult_value = int.from_bytes(multiplier, byteorder='big')
+        else:
+            mult_value = multiplier
+        leaderboard_data.append((user_id, mult_value))
+
+    leaderboard_data.sort(key=lambda x: x[1], reverse=True)
+
+    leaderboard_message = "## 🏆 ** Multiplier Leaderboard** 🏆 ##\n"
+    for idx, (user_id, mult_value) in enumerate(leaderboard_data[:10], start=1):
+        user = await bot.fetch_user(user_id)
+        leaderboard_message += f"{idx}. {user.name} - {idk.compact(mult_value)} mult\n"
 
     await ctx.send(leaderboard_message)
 
